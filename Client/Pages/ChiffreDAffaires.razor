@@ -1,0 +1,46 @@
+﻿@page "/revenue"
+
+@using Facturation.Shared
+
+@inject IBusinessData data
+
+<h1>Chiffre d'Affaires</h1>
+
+@if (data == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <p>Chiffre actuel : @data.GetCurrentRevenue() €</p>
+
+    <p>Total attendu au @GetMinDeadline() : @min_total € </p>
+    <p title="Inclut le total actuellement payé">Total attendu au @GetMaxDeadline() : @max_total € </p>
+}
+
+
+
+@code{
+    float min_total = 0;
+    float max_total = 0;
+
+    private string GetMaxDeadline()
+    {
+        DateTime deadline = data.Factures.OrderByDescending(x => x.Dates_Ticket.Deadline).ToList()[0].Dates_Ticket.Deadline;
+        foreach (Facture fac in data.Factures)
+        {
+            max_total += fac.AmountDue_Ticket.ToPay;
+        }
+        return deadline.ToShortDateString();
+    }
+    private string GetMinDeadline()
+    {
+        Facture fac = data.Factures.OrderBy(x => x.Dates_Ticket.Deadline).ToList()[0];
+        foreach (Facture facture in data.Factures)
+        {
+            min_total += facture.AmountDue_Ticket.Paid;
+        }
+        min_total += (fac.AmountDue_Ticket.ToPay - fac.AmountDue_Ticket.Paid);
+        return fac.Dates_Ticket.Deadline.ToShortDateString();
+    }
+}

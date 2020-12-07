@@ -1,0 +1,62 @@
+﻿@page "/factures"
+
+@using Facturation.Shared
+
+@inject NavigationManager nav 
+@inject IBusinessData data
+
+<h1>Factures</h1>
+
+@if (data == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Numéro</th>
+                <th>Client</th>
+                <th>Emission</th>
+                <th>Echeance</th>
+                <th>Total</th>
+                <th>Restant à régler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Facture fac in data.Factures)
+            {
+                <tr>
+                    <td>@fac.Number</td>
+                    <td>@fac.Client</td>
+                    <td>@fac.Dates_Ticket.SentOn.ToShortDateString()</td>
+                    <td>@fac.Dates_Ticket.Deadline.ToShortDateString() - @CalculateRemainingDays(fac.Dates_Ticket.Deadline)</td>
+                    <td>@fac.AmountDue_Ticket.Paid / @fac.AmountDue_Ticket.ToPay €</td>
+                    <td>@CalculateRemainingAmountDue(fac.AmountDue_Ticket.ToPay, fac.AmountDue_Ticket.Paid)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary" @onclick="GoToRevenue">Chiffre d'Affaires</button>
+}
+
+@code {
+    private string CalculateRemainingDays(DateTime deadline)
+    {
+        double numberOfDays = (deadline - DateTime.Today).TotalDays;
+
+        return numberOfDays >= 0 ? (numberOfDays + " jour(s) restants.") : ("Dépassée de " + numberOfDays + " jours.");
+    }
+
+    private string CalculateRemainingAmountDue(float total, float paid)
+    {
+        return (total - paid) + " €";
+    }
+
+    private void GoToRevenue()
+    {
+        nav.NavigateTo("/revenue");
+    }
+}
