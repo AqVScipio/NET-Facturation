@@ -1,0 +1,44 @@
+﻿@page "/facture"
+
+@using Facturation.Shared
+
+@inject HttpClient http
+@inject FactureRef fRef
+
+
+<h3>Detail</h3>
+
+@if (fac != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Numéro</th>
+                <th>Client</th>
+                <th>Emission</th>
+                <th>Echeance</th>
+                <th>Total</th>
+                <th>Restant à régler</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@fac.reference</td>
+                <td>@fac.client</td>
+                <td>@fac.dates_Ticket.sentOn.ToShortDateString()</td>
+                <td>@fac.dates_Ticket.deadline.ToShortDateString() - @Facture.CalculateRemainingDaysAsString(fac.dates_Ticket.deadline)</td>
+                <td>@fac.amountDue_Ticket.paid / @fac.amountDue_Ticket.toPay €</td>
+                <td>@Facture.CalculateRemainingAmountDueAsString(fac.amountDue_Ticket.toPay, fac.amountDue_Ticket.paid)</td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+@code {
+    private Facture fac = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        fac = await http.GetFromJsonAsync<Facture>("api/factures/"+fRef.FReference);
+    }
+}

@@ -3,11 +3,12 @@
 @using Facturation.Shared
 
 @inject NavigationManager nav 
-@inject IBusinessData data
+@inject HttpClient http
+@inject FactureRef fRef
 
 <h1>Factures</h1>
 
-@if (data == null)
+@if (allInvoices == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -18,22 +19,18 @@ else
             <tr>
                 <th>Numéro</th>
                 <th>Client</th>
-                <th>Emission</th>
                 <th>Echeance</th>
-                <th>Total</th>
-                <th>Restant à régler</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
-            @foreach (Facture fac in data.Factures)
+            @foreach (Facture fac in allInvoices)
             {
-                <tr>
-                    <td>@fac.Number</td>
-                    <td>@fac.Client</td>
-                    <td>@fac.Dates_Ticket.SentOn.ToShortDateString()</td>
-                    <td>@fac.Dates_Ticket.Deadline.ToShortDateString() - @CalculateRemainingDays(fac.Dates_Ticket.Deadline)</td>
-                    <td>@fac.AmountDue_Ticket.Paid / @fac.AmountDue_Ticket.ToPay €</td>
-                    <td>@CalculateRemainingAmountDue(fac.AmountDue_Ticket.ToPay, fac.AmountDue_Ticket.Paid)</td>
+                <tr class='table-@ColorFromInvoiceState(Facture.CalculateRemainingDays(fac.dates_Ticket.deadline) , Facture.CalculateRemainingAmountDue(fac.amountDue_Ticket.toPay, fac.amountDue_Ticket.paid))'>
+                    <td>@fac.reference</td>
+                    <td>@fac.client</td>
+                    <td>@fac.dates_Ticket.deadline.ToShortDateString() - @Facture.CalculateRemainingDaysAsString(fac.dates_Ticket.deadline)</td>
+                    <td @onclick="(() => InspectFacture(fac.reference))"><button>Detail</button></td>
                 </tr>
             }
         </tbody>
@@ -43,20 +40,41 @@ else
 }
 
 @code {
-    private string CalculateRemainingDays(DateTime deadline)
-    {
-        double numberOfDays = (deadline - DateTime.Today).TotalDays;
+    private IEnumerable<Facture> allInvoices = null;
 
-        return numberOfDays >= 0 ? (numberOfDays + " jour(s) restants.") : ("Dépassée de " + numberOfDays + " jours.");
-    }
-
-    private string CalculateRemainingAmountDue(float total, float paid)
+    protected override async Task OnInitializedAsync()
     {
-        return (total - paid) + " €";
+        allInvoices = await http.GetFromJsonAsync<IEnumerable<Facture>>("api/factures");
+        Console.WriteLine(allInvoices.Count());
     }
 
     private void GoToRevenue()
     {
         nav.NavigateTo("/revenue");
+    }
+
+    private void InspectFacture(string reference)
+    {
+        fRef.FReference = reference;
+        nav.NavigateTo("facture");
+    }
+
+    static string ColorFromInvoiceState(double remainingDays, float remainingAmount = 0)
+    {
+        if(remainingAmount > 0)
+        {
+            if (remainingDays < Facture.CLOSETODEADLINE)
+            {
+                return "danger";
+            }
+            else
+            {
+                return "default";
+            }
+        }
+        else
+        {
+            return "success";
+        }
     }
 }

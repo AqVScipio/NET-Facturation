@@ -1,45 +1,86 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.ComponentModel.DataAnnotations;
 
 namespace Facturation.Shared
 {
     public class Facture
     {
-        public string Client { get; set; }
-        public int Number { get; set; }
-        public Dates Dates_Ticket { get; set; }
-        public AmountDue AmountDue_Ticket { get; set; }
+        public static int CLOSETODEADLINE = 5;
 
-        public Facture(string client_name, int number, Dates dates, AmountDue amount)
+        [Required(ErrorMessage = "Champ requis")]
+        public string client { get; set; }
+        public string reference { get; set; }
+        public Dates dates_Ticket { get; set; }
+        public AmountDue amountDue_Ticket { get; set; }
+
+        public Facture() { }
+        public Facture(string client_name, string number, Dates dates, AmountDue amount)
         {
-            Client = client_name;
-            Number = number;
-            Dates_Ticket = dates;
-            AmountDue_Ticket = amount;
+            client = client_name;
+            reference = number;
+            dates_Ticket = dates;
+            amountDue_Ticket = amount;
+        }
+
+        public static string CalculateRemainingDays(DateTime deadline, out double numberOfDays)
+        {
+            numberOfDays = (deadline - DateTime.Today).TotalDays;
+
+            return numberOfDays >= 0 ? (numberOfDays + " jour(s) restants.") : ("Dépassée de " + numberOfDays + " jours.");
+        }
+        public static double CalculateRemainingDays(DateTime deadline)
+        {
+            return (deadline - DateTime.Today).TotalDays;
+
+            
+        }
+        public static string CalculateRemainingDaysAsString(DateTime deadline)
+        {
+            double numberOfDays = CalculateRemainingDays(deadline);
+            return numberOfDays >= 0 ? (numberOfDays + " jour(s) restants.") : ("Dépassée de " + numberOfDays + " jours.");
+        }
+
+        public static float CalculateRemainingAmountDue(float total, float paid)
+        {
+            return (total - paid);
+        }
+        public static string CalculateRemainingAmountDueAsString(float total, float paid)
+        {
+            return CalculateRemainingAmountDue(total, paid) + " €";
         }
     }
 
-    public struct Dates
+    public class Dates
     {
-        public DateTime SentOn { get; set; }
-        public DateTime Deadline { get; set; }
+        public DateTime sentOn { get; set; }
+        public DateTime deadline { get; set; }
+
+        public Dates() { }
 
         public Dates(int sentOn_modifier, int deadline_modifier)
         {
-            SentOn = DateTime.Today.AddDays(sentOn_modifier); 
-            Deadline = DateTime.Today.AddDays(deadline_modifier);
+            sentOn = DateTime.Today.AddDays(sentOn_modifier);
+            deadline = DateTime.Today.AddDays(deadline_modifier);
+        }
+
+        public bool IsCloseToDeadline()
+        {
+            return (deadline - DateTime.Today).TotalDays <= Facture.CLOSETODEADLINE;
         }
     }
 
-    public struct AmountDue
+    public class AmountDue
     {
-        public float ToPay { get; set; }
-        public float Paid { get; set; }
+        public float toPay { get; set; }
+        public float paid { get; set; }
+
+        public AmountDue() { }
 
         public AmountDue(float toPay, float paid)
         {
-            ToPay = toPay; Paid = paid;
+            this.toPay = toPay; this.paid = paid;
         }
     }
 }
